@@ -30,3 +30,6 @@
 
 # Ignore idea files
 .idea/
+
+# Ignore .byebug_history
+.byebug_history
