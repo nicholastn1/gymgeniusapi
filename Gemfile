@@ -18,6 +18,10 @@ gem 'devise-jwt'
 
 gem 'fast_jsonapi'
 
+gem 'sendgrid-ruby'
+
+gem 'dotenv'
+
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 # gem "jbuilder"
 
