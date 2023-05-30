@@ -34,6 +34,6 @@ class UserMailer < ApplicationMailer
   private
 
   def edit_password_reset_url(user)
-    "http://localhost:5173/login/reset?reset_password_token=#{user.reset_password_token}&email=#{user.email}"
+    "#{ENV['GYM_GENIUS_URL']}/login/reset?reset_password_token=#{user.reset_password_token}&email=#{user.email}"
   end
 end
