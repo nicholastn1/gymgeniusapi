@@ -36,3 +36,6 @@
 
 # Ignore .env file
 .env
+
+# Ignore .tool-versions
+.tool-versions
