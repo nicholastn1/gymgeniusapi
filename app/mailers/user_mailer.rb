@@ -4,22 +4,19 @@ include SendGrid
 
 class UserMailer < ApplicationMailer
   def reset_password_instructions(user)
-    from = SendGrid::Email.new(email: 'gymgeniusapi@gmail.com')
-    to = SendGrid::Email.new(email: user.email)
-    subject = 'Reset Password Instructions'
+    mail = SendGrid::Mail.new
+    mail.from = SendGrid::Email.new(email: 'gymgeniusapi@gmail.com')
+
+    personalization = SendGrid::Personalization.new
+    personalization.add_to(SendGrid::Email.new(email: user.email))
     reset_password_url = edit_password_reset_url(user)
-    content = SendGrid::Content.new(type: 'text/plain', value: "Hi #{user.email},
-        You have requested to reset your password.
-        To do so, please click on the following link: #{reset_password_url}
-        If you did not request to reset your password, please ignore this email.
-        Thanks,
-        GymGenius Team")
-    mail = SendGrid::Mail.new(from, subject, to, content)
+    personalization.add_dynamic_template_data({
+      "email" => user.email,
+      "reset_password_url" => reset_password_url
+    })
 
-    # personalization = Personalization.new
-    # personalization.add_to(Email.new(email: user.email))
-
-    # mail.add_personalization(personalization)
+    mail.add_personalization(personalization)
+    mail.template_id = 'd-fcf9735f1f7d4488ba3d15b95305fb96'
 
     sg = SendGrid::API.new(api_key: ENV['SENDGRID_API_KEY'])
     response = sg.client.mail._('send').post(request_body: mail.to_json)
