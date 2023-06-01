@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Be sure to restart your server when you modify this file.
 
 # Avoid CORS issues when API is called from the frontend app.
@@ -11,8 +13,8 @@ Rails.application.config.middleware.insert_before 0, Rack::Cors do
     resource(
       '*',
       headers: :any,
-      expose: ["Authorization"],
-      methods: [:get, :patch, :put, :delete, :post, :options, :show]
+      expose: ['Authorization'],
+      methods: %i[get patch put delete post options show]
     )
   end
 end

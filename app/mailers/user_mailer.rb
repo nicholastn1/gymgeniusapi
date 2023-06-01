@@ -1,8 +1,12 @@
+# frozen_string_literal: true
+
 require 'sendgrid-ruby'
 require 'dotenv/load'
-include SendGrid
 
 class UserMailer < ApplicationMailer
+  include SendGrid
+
+  # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
   def reset_password_instructions(user)
     mail = SendGrid::Mail.new
     mail.from = SendGrid::Email.new(email: 'gymgeniusapi@gmail.com')
@@ -11,9 +15,9 @@ class UserMailer < ApplicationMailer
     personalization.add_to(SendGrid::Email.new(email: user.email))
     reset_password_url = edit_password_reset_url(user)
     personalization.add_dynamic_template_data({
-      "email" => user.email,
-      "reset_password_url" => reset_password_url
-    })
+                                                'email' => user.email,
+                                                'reset_password_url' => reset_password_url
+                                              })
 
     mail.add_personalization(personalization)
     mail.template_id = 'd-fcf9735f1f7d4488ba3d15b95305fb96'
@@ -27,6 +31,7 @@ class UserMailer < ApplicationMailer
       puts 'Failed to send password reset instructions email'
     end
   end
+  # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
   private
 
