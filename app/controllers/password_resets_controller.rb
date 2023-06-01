@@ -1,7 +1,10 @@
+# frozen_string_literal: true
+
 require 'sendgrid-ruby'
-include SendGrid
 
 class PasswordResetsController < ApplicationController
+  include SendGrid
+
   def create
     user = User.find_by(email: params[:user][:email])
     if user
