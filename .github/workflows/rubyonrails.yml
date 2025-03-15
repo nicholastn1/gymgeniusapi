@@ -53,24 +53,146 @@ jobs:
             sudo ruby-build 3.2.2 /opt/hostedtoolcache/Ruby/3.2.2/x64
             sudo touch /opt/hostedtoolcache/Ruby/3.2.2/x64.complete
 
+            # Ajustar permissões
+            sudo chown -R $(whoami):$(id -gn) /opt/hostedtoolcache/Ruby/3.2.2/x64
+
+            # Configurar GEM_HOME e PATH
+            export GEM_HOME="/opt/hostedtoolcache/Ruby/3.2.2/x64/lib/ruby/gems/3.2.0"
+            export PATH="/opt/hostedtoolcache/Ruby/3.2.2/x64/bin:$PATH"
+
+            # Atualizar RubyGems e instalar Bundler manualmente
+            /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem update --system
+            /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+
             echo "Ruby 3.2.2 instalado com sucesso!"
           else
             echo "Usando a instalação padrão do Ruby..."
+
+            # Se o Ruby já existe, ainda precisamos garantir que o Bundler esteja instalado
+            if [[ -d "/opt/hostedtoolcache/Ruby/3.2.2/x64" ]]; then
+              # Ajustar permissões
+              sudo chown -R $(whoami):$(id -gn) /opt/hostedtoolcache/Ruby/3.2.2/x64
+
+              # Configurar GEM_HOME e PATH
+              export GEM_HOME="/opt/hostedtoolcache/Ruby/3.2.2/x64/lib/ruby/gems/3.2.0"
+              export PATH="/opt/hostedtoolcache/Ruby/3.2.2/x64/bin:$PATH"
+
+              # Atualizar RubyGems e instalar Bundler manualmente
+              /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem update --system
+              /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+            fi
+          fi
+
+      # Verificar e corrigir o ambiente Ruby
+      - name: Verificar e corrigir ambiente Ruby
+        run: |
+          if [[ -d "/opt/hostedtoolcache/Ruby/3.2.2/x64" ]]; then
+            echo "Verificando e corrigindo o ambiente Ruby..."
+
+            # Verificar permissões
+            if [[ ! -x "/opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby" || ! -x "/opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem" ]]; then
+              echo "Corrigindo permissões de execução..."
+              sudo chmod -R +x /opt/hostedtoolcache/Ruby/3.2.2/x64/bin
+            fi
+
+            # Verificar propriedade dos arquivos
+            if [[ "$(stat -c '%U' /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby)" != "$(whoami)" ]]; then
+              echo "Corrigindo propriedade dos arquivos..."
+              sudo chown -R $(whoami):$(id -gn) /opt/hostedtoolcache/Ruby/3.2.2/x64
+            fi
+
+            # Verificar se o RubyGems está funcionando
+            if ! /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem --version &> /dev/null; then
+              echo "Problema com RubyGems detectado, tentando reinstalar..."
+
+              # Baixar e instalar RubyGems manualmente
+              wget https://rubygems.org/rubygems/rubygems-3.4.10.tgz
+              tar -xzf rubygems-3.4.10.tgz
+              cd rubygems-3.4.10
+              sudo /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby setup.rb
+              cd ..
+              rm -rf rubygems-3.4.10*
+
+              # Instalar Bundler
+              /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+            fi
+
+            # Verificar se o Bundler está instalado
+            if ! /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem list bundler -i &> /dev/null; then
+              echo "Bundler não encontrado, instalando..."
+              /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+            fi
+
+            echo "Ambiente Ruby verificado e corrigido."
+          else
+            echo "Diretório Ruby não encontrado, pulando verificação."
           fi
 
       # Usar setup-ruby após a instalação manual
       - name: Setup Ruby and gems
+        id: setup-ruby
+        continue-on-error: true
         uses: ruby/setup-ruby@55283cc23133118229fd3f97f9336ee23a179fcf # v1.146.0
         with:
           ruby-version: '3.2.2'
           bundler-cache: true
 
+      # Configuração alternativa se setup-ruby falhar
+      - name: Configuração alternativa do Ruby
+        if: steps.setup-ruby.outcome == 'failure'
+        run: |
+          echo "Usando configuração alternativa do Ruby..."
+
+          # Configurar variáveis de ambiente
+          echo "GEM_HOME=/opt/hostedtoolcache/Ruby/3.2.2/x64/lib/ruby/gems/3.2.0" >> $GITHUB_ENV
+          echo "PATH=/opt/hostedtoolcache/Ruby/3.2.2/x64/bin:$PATH" >> $GITHUB_ENV
+
+          # Instalar dependências manualmente
+          cd $GITHUB_WORKSPACE
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/bundle install
+
+      # Diagnóstico em caso de falha
+      - name: Diagnóstico do ambiente Ruby
+        if: ${{ failure() }}
+        run: |
+          echo "=== Diagnóstico do ambiente Ruby ==="
+          echo "Verificando diretórios:"
+          ls -la /opt/hostedtoolcache/Ruby/3.2.2/x64/bin || echo "Diretório não encontrado"
+
+          echo "Verificando permissões:"
+          stat /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby || echo "Ruby não encontrado"
+          stat /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem || echo "Gem não encontrado"
+
+          echo "Verificando versões:"
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby --version || echo "Falha ao executar ruby --version"
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem --version || echo "Falha ao executar gem --version"
+
+          echo "Verificando variáveis de ambiente:"
+          echo "PATH: $PATH"
+          echo "GEM_HOME: $GEM_HOME"
+          echo "GEM_PATH: $GEM_PATH"
+
+          echo "Verificando gems instaladas:"
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem list || echo "Falha ao listar gems"
+
       # Add or replace database setup steps here
       - name: Set up database schema
-        run: bin/rails db:schema:load
+        run: |
+          if [[ -f "bin/rails" ]]; then
+            bin/rails db:schema:load
+          else
+            /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/bundle exec rails db:schema:load
+          fi
+
       # Add or replace test runners here
       - name: Run tests
-        run: bin/rake
+        run: |
+          if [[ -f "bin/rake" ]]; then
+            bin/rake
+          else
+            /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/bundle exec rake
+          fi
 
   lint:
     runs-on: ubuntu-latest
@@ -102,22 +224,150 @@ jobs:
             sudo ruby-build 3.2.2 /opt/hostedtoolcache/Ruby/3.2.2/x64
             sudo touch /opt/hostedtoolcache/Ruby/3.2.2/x64.complete
 
+            # Ajustar permissões
+            sudo chown -R $(whoami):$(id -gn) /opt/hostedtoolcache/Ruby/3.2.2/x64
+
+            # Configurar GEM_HOME e PATH
+            export GEM_HOME="/opt/hostedtoolcache/Ruby/3.2.2/x64/lib/ruby/gems/3.2.0"
+            export PATH="/opt/hostedtoolcache/Ruby/3.2.2/x64/bin:$PATH"
+
+            # Atualizar RubyGems e instalar Bundler manualmente
+            /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem update --system
+            /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+
             echo "Ruby 3.2.2 instalado com sucesso!"
           else
             echo "Usando a instalação padrão do Ruby..."
+
+            # Se o Ruby já existe, ainda precisamos garantir que o Bundler esteja instalado
+            if [[ -d "/opt/hostedtoolcache/Ruby/3.2.2/x64" ]]; then
+              # Ajustar permissões
+              sudo chown -R $(whoami):$(id -gn) /opt/hostedtoolcache/Ruby/3.2.2/x64
+
+              # Configurar GEM_HOME e PATH
+              export GEM_HOME="/opt/hostedtoolcache/Ruby/3.2.2/x64/lib/ruby/gems/3.2.0"
+              export PATH="/opt/hostedtoolcache/Ruby/3.2.2/x64/bin:$PATH"
+
+              # Atualizar RubyGems e instalar Bundler manualmente
+              /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem update --system
+              /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+            fi
+          fi
+
+      # Verificar e corrigir o ambiente Ruby
+      - name: Verificar e corrigir ambiente Ruby
+        run: |
+          if [[ -d "/opt/hostedtoolcache/Ruby/3.2.2/x64" ]]; then
+            echo "Verificando e corrigindo o ambiente Ruby..."
+
+            # Verificar permissões
+            if [[ ! -x "/opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby" || ! -x "/opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem" ]]; then
+              echo "Corrigindo permissões de execução..."
+              sudo chmod -R +x /opt/hostedtoolcache/Ruby/3.2.2/x64/bin
+            fi
+
+            # Verificar propriedade dos arquivos
+            if [[ "$(stat -c '%U' /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby)" != "$(whoami)" ]]; then
+              echo "Corrigindo propriedade dos arquivos..."
+              sudo chown -R $(whoami):$(id -gn) /opt/hostedtoolcache/Ruby/3.2.2/x64
+            fi
+
+            # Verificar se o RubyGems está funcionando
+            if ! /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem --version &> /dev/null; then
+              echo "Problema com RubyGems detectado, tentando reinstalar..."
+
+              # Baixar e instalar RubyGems manualmente
+              wget https://rubygems.org/rubygems/rubygems-3.4.10.tgz
+              tar -xzf rubygems-3.4.10.tgz
+              cd rubygems-3.4.10
+              sudo /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby setup.rb
+              cd ..
+              rm -rf rubygems-3.4.10*
+
+              # Instalar Bundler
+              /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+            fi
+
+            # Verificar se o Bundler está instalado
+            if ! /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem list bundler -i &> /dev/null; then
+              echo "Bundler não encontrado, instalando..."
+              /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+            fi
+
+            echo "Ambiente Ruby verificado e corrigido."
+          else
+            echo "Diretório Ruby não encontrado, pulando verificação."
           fi
 
       # Usar setup-ruby após a instalação manual
       - name: Setup Ruby and gems
+        id: setup-ruby
+        continue-on-error: true
         uses: ruby/setup-ruby@55283cc23133118229fd3f97f9336ee23a179fcf # v1.146.0
         with:
           ruby-version: '3.2.2'
           bundler-cache: true
 
+      # Configuração alternativa se setup-ruby falhar
+      - name: Configuração alternativa do Ruby
+        if: steps.setup-ruby.outcome == 'failure'
+        run: |
+          echo "Usando configuração alternativa do Ruby..."
+
+          # Configurar variáveis de ambiente
+          echo "GEM_HOME=/opt/hostedtoolcache/Ruby/3.2.2/x64/lib/ruby/gems/3.2.0" >> $GITHUB_ENV
+          echo "PATH=/opt/hostedtoolcache/Ruby/3.2.2/x64/bin:$PATH" >> $GITHUB_ENV
+
+          # Instalar dependências manualmente
+          cd $GITHUB_WORKSPACE
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem install bundler -v "~> 2.4" --no-document
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/bundle install
+
+      # Diagnóstico em caso de falha
+      - name: Diagnóstico do ambiente Ruby
+        if: ${{ failure() }}
+        run: |
+          echo "=== Diagnóstico do ambiente Ruby ==="
+          echo "Verificando diretórios:"
+          ls -la /opt/hostedtoolcache/Ruby/3.2.2/x64/bin || echo "Diretório não encontrado"
+
+          echo "Verificando permissões:"
+          stat /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby || echo "Ruby não encontrado"
+          stat /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem || echo "Gem não encontrado"
+
+          echo "Verificando versões:"
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/ruby --version || echo "Falha ao executar ruby --version"
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem --version || echo "Falha ao executar gem --version"
+
+          echo "Verificando variáveis de ambiente:"
+          echo "PATH: $PATH"
+          echo "GEM_HOME: $GEM_HOME"
+          echo "GEM_PATH: $GEM_PATH"
+
+          echo "Verificando gems instaladas:"
+          /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/gem list || echo "Falha ao listar gems"
+
       # Add or replace any other lints here
       - name: Security audit dependencies
-        run: bin/bundler-audit --update
+        run: |
+          if [[ -f "bin/bundler-audit" ]]; then
+            bin/bundler-audit --update
+          else
+            /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/bundle exec bundler-audit --update
+          fi
+
       - name: Security audit application code
-        run: bin/brakeman -q -w2
+        run: |
+          if [[ -f "bin/brakeman" ]]; then
+            bin/brakeman -q -w2
+          else
+            /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/bundle exec brakeman -q -w2
+          fi
+
       - name: Lint Ruby files
-        run: bin/rubocop --parallel
+        run: |
+          if [[ -f "bin/rubocop" ]]; then
+            bin/rubocop --parallel
+          else
+            /opt/hostedtoolcache/Ruby/3.2.2/x64/bin/bundle exec rubocop --parallel
+          fi
