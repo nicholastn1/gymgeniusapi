@@ -1,0 +1,368 @@
+---
+openapi: 3.0.1
+info:
+  title: GymGenius API
+  version: v1
+  description: API para o sistema GymGenius - Gerenciamento de treinos e exercícios
+paths:
+  /api/v1/health:
+    get:
+      summary: Verificar o status da API
+      description: Endpoint público que não requer autenticação, usado para verificar se a API está funcionando corretamente.
+      tags:
+        - Sistema
+      responses:
+        '200':
+          description: API funcionando corretamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  environment:
+                    type: string
+                    example: "production"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2023-06-15T10:30:45Z"
+  /api/v1/signup:
+    post:
+      summary: Registrar um novo usuário
+      description: Endpoint público que não requer autenticação, usado para criar uma nova conta de usuário.
+      tags:
+        - Autenticação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      example: usuario@exemplo.com
+                    password:
+                      type: string
+                      format: password
+                      example: senha123
+                    password_confirmation:
+                      type: string
+                      format: password
+                      example: senha123
+                  required:
+                    - email
+                    - password
+                    - password_confirmation
+      responses:
+        '200':
+          description: Usuário registrado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Signed up sucessfully."
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: "usuario@exemplo.com"
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+        '422':
+          description: Erro ao registrar usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "User couldn't be created successfully. Email has already been taken"
+  /api/v1/login:
+    post:
+      summary: Autenticar usuário
+      description: Endpoint público que não requer autenticação, usado para fazer login e obter um token JWT.
+      tags:
+        - Autenticação
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      example: usuario@exemplo.com
+                    password:
+                      type: string
+                      format: password
+                      example: senha123
+                  required:
+                    - email
+                    - password
+      responses:
+        '200':
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Logged in sucessfully."
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: "usuario@exemplo.com"
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                        example: 401
+                      message:
+                        type: string
+                        example: "Invalid email or password."
+  /api/v1/logout:
+    delete:
+      summary: Encerrar sessão do usuário
+      description: Endpoint que requer autenticação, usado para encerrar a sessão do usuário atual.
+      tags:
+        - Autenticação
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout realizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "logged out successfully"
+        '401':
+          description: Sessão não encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: "Couldn't find an active session."
+  /api/v1/current_user:
+    get:
+      summary: Obter dados do usuário atual
+      description: Endpoint que requer autenticação, usado para obter os dados do usuário atual.
+      tags:
+        - Usuários
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dados do usuário atual
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  email:
+                    type: string
+                    example: "usuario@exemplo.com"
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Você precisa fazer login para continuar."
+  /api/v1/password/forgot:
+    get:
+      summary: Endpoint para compatibilidade com solicitação de redefinição de senha
+      description: Endpoint público que não requer autenticação, usado apenas para compatibilidade.
+      tags:
+        - Senhas
+      responses:
+        '200':
+          description: Resposta vazia para compatibilidade
+    post:
+      summary: Solicitar redefinição de senha
+      description: Endpoint público que não requer autenticação, usado para solicitar o envio de instruções de redefinição de senha.
+      tags:
+        - Senhas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                      example: usuario@exemplo.com
+                  required:
+                    - email
+      responses:
+        '200':
+          description: Instruções de redefinição enviadas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset instructions sent"
+        '404':
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "User not found"
+  /api/v1/password/reset:
+    patch:
+      summary: Redefinir senha
+      description: Endpoint público que não requer autenticação, usado para redefinir a senha com um token válido.
+      tags:
+        - Senhas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    token:
+                      type: string
+                      example: "abc123def456"
+                    password:
+                      type: string
+                      format: password
+                      example: "novaSenha123"
+                  required:
+                    - token
+                    - password
+      responses:
+        '200':
+          description: Senha redefinida com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Password reset successful"
+        '422':
+          description: Token inválido ou expirado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid or expired reset token"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+servers:
+  - url: http://localhost:3000
+    description: Ambiente de Desenvolvimento Local
+  - url: https://gymgeniusapi.onrender.com
+    description: Ambiente de Produção
