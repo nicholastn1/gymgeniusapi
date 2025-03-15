@@ -28,11 +28,43 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      # Add or replace dependency steps here
-      - name: Install Ruby and gems
+      # Instalação manual do Ruby para runners autogerenciados
+      - name: Install Ruby
+        run: |
+          if [[ "$(uname -s)" == "Linux" && ! -d "/opt/hostedtoolcache/Ruby/3.2.2/x64" ]]; then
+            echo "Instalando Ruby 3.2.2 manualmente..."
+            # Instalar dependências necessárias
+            sudo apt-get update
+            sudo apt-get install -y libssl-dev libreadline-dev zlib1g-dev autoconf bison build-essential libyaml-dev libreadline-dev libncurses5-dev libffi-dev libgdbm-dev
+
+            # Instalar ruby-build se necessário
+            if ! command -v ruby-build &> /dev/null; then
+              git clone https://github.com/rbenv/ruby-build.git
+              cd ruby-build
+              sudo ./install.sh
+              cd ..
+              rm -rf ruby-build
+            fi
+
+            # Criar diretório de cache se não existir
+            sudo mkdir -p /opt/hostedtoolcache/Ruby/3.2.2
+
+            # Instalar Ruby
+            sudo ruby-build 3.2.2 /opt/hostedtoolcache/Ruby/3.2.2/x64
+            sudo touch /opt/hostedtoolcache/Ruby/3.2.2/x64.complete
+
+            echo "Ruby 3.2.2 instalado com sucesso!"
+          else
+            echo "Usando a instalação padrão do Ruby..."
+          fi
+
+      # Usar setup-ruby após a instalação manual
+      - name: Setup Ruby and gems
         uses: ruby/setup-ruby@55283cc23133118229fd3f97f9336ee23a179fcf # v1.146.0
         with:
+          ruby-version: '3.2.2'
           bundler-cache: true
+
       # Add or replace database setup steps here
       - name: Set up database schema
         run: bin/rails db:schema:load
@@ -45,10 +77,43 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Install Ruby and gems
+      # Instalação manual do Ruby para runners autogerenciados
+      - name: Install Ruby
+        run: |
+          if [[ "$(uname -s)" == "Linux" && ! -d "/opt/hostedtoolcache/Ruby/3.2.2/x64" ]]; then
+            echo "Instalando Ruby 3.2.2 manualmente..."
+            # Instalar dependências necessárias
+            sudo apt-get update
+            sudo apt-get install -y libssl-dev libreadline-dev zlib1g-dev autoconf bison build-essential libyaml-dev libreadline-dev libncurses5-dev libffi-dev libgdbm-dev
+
+            # Instalar ruby-build se necessário
+            if ! command -v ruby-build &> /dev/null; then
+              git clone https://github.com/rbenv/ruby-build.git
+              cd ruby-build
+              sudo ./install.sh
+              cd ..
+              rm -rf ruby-build
+            fi
+
+            # Criar diretório de cache se não existir
+            sudo mkdir -p /opt/hostedtoolcache/Ruby/3.2.2
+
+            # Instalar Ruby
+            sudo ruby-build 3.2.2 /opt/hostedtoolcache/Ruby/3.2.2/x64
+            sudo touch /opt/hostedtoolcache/Ruby/3.2.2/x64.complete
+
+            echo "Ruby 3.2.2 instalado com sucesso!"
+          else
+            echo "Usando a instalação padrão do Ruby..."
+          fi
+
+      # Usar setup-ruby após a instalação manual
+      - name: Setup Ruby and gems
         uses: ruby/setup-ruby@55283cc23133118229fd3f97f9336ee23a179fcf # v1.146.0
         with:
+          ruby-version: '3.2.2'
           bundler-cache: true
+
       # Add or replace any other lints here
       - name: Security audit dependencies
         run: bin/bundler-audit --update
