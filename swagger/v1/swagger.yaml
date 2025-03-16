@@ -60,10 +60,19 @@ paths:
                       type: string
                       format: password
                       example: senha123
+                    name:
+                      type: string
+                      example: "João Silva"
+                    image:
+                      type: string
+                      format: byte
+                      description: "Base64 encoded image"
+                      example: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
                   required:
                     - email
                     - password
                     - password_confirmation
+                    - name
       responses:
         '200':
           description: Usuário registrado com sucesso
@@ -241,6 +250,13 @@ paths:
                   email:
                     type: string
                     example: "usuario@exemplo.com"
+                  name:
+                    type: string
+                    example: "João Silva"
+                  image:
+                    type: string
+                    format: byte
+                    description: "Base64 encoded image"
                   created_at:
                     type: string
                     format: date-time
@@ -257,6 +273,94 @@ paths:
                   error:
                     type: string
                     example: "Você precisa fazer login para continuar."
+  /api/v1/users:
+    patch:
+      summary: Atualizar dados do usuário atual
+      description: Endpoint que requer autenticação, usado para atualizar os dados do usuário atual.
+      tags:
+        - Usuários
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: "João Silva"
+                    image:
+                      type: string
+                      format: byte
+                      description: "Base64 encoded image"
+                      example: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+      responses:
+        '200':
+          description: Usuário atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: object
+                    properties:
+                      code:
+                        type: integer
+                        example: 200
+                      message:
+                        type: string
+                        example: "Usuário atualizado com sucesso."
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: "usuario@exemplo.com"
+                      name:
+                        type: string
+                        example: "João Silva"
+                      image:
+                        type: string
+                        format: byte
+                        description: "Base64 encoded image"
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+        '401':
+          description: Não autorizado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Você precisa fazer login para continuar."
+        '422':
+          description: Erro ao atualizar usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                        example: "Não foi possível atualizar o usuário. Nome não pode ficar em branco"
   /api/v1/password/forgot:
     get:
       summary: Endpoint para compatibilidade com solicitação de redefinição de senha

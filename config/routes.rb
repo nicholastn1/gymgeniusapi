@@ -15,8 +15,9 @@ Rails.application.routes.draw do
       post '/login', to: 'sessions#create'
       delete '/logout', to: 'sessions#destroy'
 
-      # Rota de usuário atual
+      # Rotas de usuário
       get '/current_user', to: 'users#current'
+      patch '/users', to: 'users#update'
 
       # Rotas de redefinição de senha
       get '/password/forgot', to: 'password_resets#new'
