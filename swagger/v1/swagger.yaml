@@ -89,7 +89,7 @@ paths:
                         example: 200
                       message:
                         type: string
-                        example: "Signed up sucessfully."
+                        example: "Signed up successfully."
                   data:
                     type: object
                     properties:
@@ -161,7 +161,7 @@ paths:
                         example: 200
                       message:
                         type: string
-                        example: "Logged in sucessfully."
+                        example: "Logged in successfully."
                   data:
                     type: object
                     properties:
