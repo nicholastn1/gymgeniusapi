@@ -11,9 +11,9 @@ module Api
         if user&.valid_password?(params[:user][:password])
           sign_in(user)
           render json: {
-            status: { code: 200, message: 'Logged in sucessfully.' },
+            status: { code: 200, message: 'Logged in successfully.' },
             data: UserSerializer.new(user).serializable_hash[:data][:attributes]
-          }, status: :ok
+          }, status: :ok, headers: { Authorization: "Bearer #{request.env['warden-jwt_auth.token']}" }
         else
           render json: {
             status: { code: 401, message: 'Invalid email or password.' }

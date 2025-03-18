@@ -10,7 +10,7 @@ module Api
         user = User.new(user_params)
         if user.save
           render json: {
-            status: { code: 200, message: 'Signed up sucessfully.' },
+            status: { code: 200, message: 'Signed up successfully.' },
             data: UserSerializer.new(user).serializable_hash[:data][:attributes]
           }, status: :ok
         else
@@ -23,7 +23,7 @@ module Api
       private
 
       def user_params
-        params.require(:user).permit(:email, :password, :password_confirmation)
+        params.require(:user).permit(:email, :password, :password_confirmation, :name, :image)
       end
     end
   end
